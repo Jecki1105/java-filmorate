@@ -40,28 +40,28 @@ public class InMemoryFilmService implements FilmService {
 
     private void validationEmptyFields(Film film) {
         if (film.getName() == null) {
-            throw new ValidationException("Название не может быть пустым");
+            throw new ValidationException("Название не может быть пустым!");
         }
         if (film.getReleaseDate() == null) {
-            throw new ValidationException("Дата релиза должна быть указана");
+            throw new ValidationException("Дата релиза должна быть указана и не может быть раньше 28 декабря 1895 года!");
         }
         if (film.getDuration() == null) {
-            throw new ValidationException("Продолжительность должна быть указана");
+            throw new ValidationException("Продолжительность должна быть указана!");
         }
     }
 
     private void validateFormat(Film film) {
         if (film.getName() != null && !StringUtils.hasText(film.getName())) {
-            throw new ValidationException("Название не может быть пустым");
+            throw new ValidationException("Название не может быть пустым!");
         }
         if (film.getDescription() != null && film.getDescription().length() > MAX_LENGTH_DESCRIPTION) {
-            throw new ValidationException("Максимальная длина описания — 200 символов");
+            throw new ValidationException("Максимальная длина описания — 200 символов!");
         }
         if (film.getReleaseDate() != null && film.getReleaseDate().isBefore(DATE_FIRST_MOVIE)) {
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
         }
         if (film.getDuration() != null && film.getDuration() <= 0) {
-            throw new ValidationException("Продолжительность фильма должна быть положительным числом");
+            throw new ValidationException("Продолжительность фильма должна быть положительным числом!");
         }
     }
 

@@ -83,13 +83,13 @@ public class InMemoryUserService implements UserService {
     public User create(User user) {
 
         if (user.getEmail() == null || !user.getEmail().contains("@")) {
-            throw new ValidationException("Электронная почта не может быть пустой и должна содержать символ @");
+            throw new ValidationException("Электронная почта не может быть пустой и должна содержать символ: @");
         }
         if (user.getLogin() == null || user.getLogin().contains(" ")) {
-            throw new ValidationException("Логин не может быть пустым и содержать пробелы");
+            throw new ValidationException("Логин не может быть пустым и содержать пробелы!");
         }
         if (user.getBirthday() == null || user.getBirthday().isAfter(LocalDate.now())) {
-            throw new ValidationException("Дата рождения должна быть указана и не может быть в будущем");
+            throw new ValidationException("Дата рождения должна быть указана и не может быть в будущем!");
         }
         return userStorage.create(user);
     }
