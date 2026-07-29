@@ -82,7 +82,7 @@ class FilmorateApplicationTests {
         film.setReleaseDate(LocalDate.of(1895, 12, 27));
 
         ValidationException exception = assertThrows(ValidationException.class, () -> filmController.create(film));
-        assertEquals("Дата релиза должна быть указана и не может быть раньше 28 декабря 1895 года!",
+        assertEquals("Дата релиза не может быть раньше 28 декабря 1895 года",
                 exception.getMessage());
     }
 
