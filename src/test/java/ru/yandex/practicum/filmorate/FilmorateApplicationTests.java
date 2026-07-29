@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -9,6 +10,10 @@ import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.controller.UserController;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,14 +24,21 @@ import java.util.Collection;
 @SpringBootTest
 class FilmorateApplicationTests {
 
+    @Autowired
     private UserController userController;
+    @Autowired
     private FilmController filmController;
+    @Autowired
+    private UserStorage userStorage;
+    @Autowired
+    private FilmStorage filmStorage;
+
     public static final int FAKE_ID_FOR_TEST = 121;
 
     @BeforeEach
-    void create() {
-        userController = new UserController();
-        filmController = new FilmController();
+    void setUp() {
+        ((InMemoryFilmStorage) filmStorage).getFilms().clear();
+        ((InMemoryUserStorage) userStorage).getUsers().clear();
     }
 
     Film createValidFilm() {
@@ -56,7 +68,8 @@ class FilmorateApplicationTests {
         Film film = createValidFilm();
         Film createdFilm = filmController.create(film);
 
-        assertEquals(1, createdFilm.getId());
+        assertNotNull(createdFilm.getId());
+        assertTrue(createdFilm.getId() > 0);
         assertEquals("Имя1", createdFilm.getName());
         assertEquals("Описание", createdFilm.getDescription());
         assertEquals(LocalDate.of(2010, 5, 10), createdFilm.getReleaseDate());
@@ -127,7 +140,7 @@ class FilmorateApplicationTests {
         filmController.create(oldFilm);
 
         Film newFilm = Film.builder()
-                .id(FAKE_ID_FOR_TEST)
+                .id((long) FAKE_ID_FOR_TEST)
                 .name("Обновленное имя")
                 .description("Описание")
                 .releaseDate(LocalDate.of(2010, 5, 10))
@@ -148,7 +161,8 @@ class FilmorateApplicationTests {
         User user = createValidUser();
         User createdUser = userController.create(user);
 
-        assertEquals(1, createdUser.getId());
+        assertNotNull(createdUser.getId());
+        assertTrue(createdUser.getId() > 0);
         assertEquals("email@.com", createdUser.getEmail());
         assertEquals("Логин", createdUser.getLogin());
         assertEquals("Имя", createdUser.getName());
@@ -161,7 +175,7 @@ class FilmorateApplicationTests {
         userController.create(oldUser);
 
         User newUser = User.builder()
-                .id(FAKE_ID_FOR_TEST)
+                .id((long) FAKE_ID_FOR_TEST)
                 .email("email@.com")
                 .login("Логин")
                 .name("Имя")
@@ -183,17 +197,17 @@ class FilmorateApplicationTests {
         User user1 = userController.create(createValidUser());
         User user2 = userController.create(
                 User.builder()
-                        .email("secondEmail@.com")
+                        .email("secondEmail@com")
                         .login("Логин2")
                         .name("Имя2")
                         .birthday(LocalDate.of(2000, 1, 1))
                         .build()
         );
         Collection<User> allUsers = userController.findAll();
+
         assertEquals(2, allUsers.size());
         assertTrue(allUsers.contains(user1));
         assertTrue(allUsers.contains(user2));
-
     }
 
     @Test
