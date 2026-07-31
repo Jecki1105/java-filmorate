@@ -3,35 +3,28 @@ package ru.yandex.practicum.filmorate.controller;
 import java.util.Collection;
 import java.util.List;
 
-
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.film.FilmService;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-
 
 @Slf4j
 @RestController
 @RequestMapping("/films")
 public class FilmController {
-
-    private final FilmStorage filmStorage;
     private final FilmService filmService;
 
     @Autowired
-    public FilmController(FilmStorage filmStorage, FilmService filmService) {
-        this.filmStorage = filmStorage;
+    public FilmController(FilmService filmService) {
         this.filmService = filmService;
     }
 
     @GetMapping
     public Collection<Film> findAll() {
         log.info("Запрос на получение всех фильмов.");
-        Collection<Film> films = filmStorage.findAll();
+        Collection<Film> films = filmService.findAll();
         log.debug("Получен список фильмов: {}", films);
         return films;
     }
@@ -47,21 +40,15 @@ public class FilmController {
     @PutMapping
     public Film update(@Valid @RequestBody Film newFilm) {
         log.info("Запрос на изменение фильма: {}", newFilm);
-        Film updatedFilm = filmStorage.update(newFilm);
+        Film updatedFilm = filmService.update(newFilm);
         log.info("Фильм {} обновлен", updatedFilm);
         return updatedFilm;
-    }
-
-    private Long getNextId() {
-        Long newId = filmStorage.getNextId();
-        log.debug("Сгенерирован новый id - {}", newId);
-        return newId;
     }
 
     @GetMapping("/{id}")
     public Film getFilmById(@PathVariable Long id) {
         log.info("Запрос на получение фильма с ID: {}", id);
-        Film film = filmStorage.findById(id);
+        Film film = filmService.findById(id);
         log.debug("Найден фильм: {}", film);
         return film;
     }

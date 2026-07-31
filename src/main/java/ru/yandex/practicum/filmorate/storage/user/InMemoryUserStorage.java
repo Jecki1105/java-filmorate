@@ -7,15 +7,14 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Component
 public class InMemoryUserStorage implements UserStorage {
 
     private final Map<Long, User> users = new HashMap<>();
+    private final Map<Long, Set<Long>> friends = new HashMap<>();
 
     @Override
     public Collection<User> findAll() {
@@ -104,5 +103,33 @@ public class InMemoryUserStorage implements UserStorage {
 
     public Map<Long, User> getUsers() {
         return users;
+    }
+
+    @Override
+    public void addFriend(Long userId, Long friendId) {
+        findById(userId);
+        findById(friendId);
+        friends.putIfAbsent(userId, new HashSet<>());
+        friends.putIfAbsent(friendId, new HashSet<>());
+        friends.get(userId).add(friendId);
+        friends.get(friendId).add(userId);
+    }
+
+    @Override
+    public void deleteFriend(Long userId, Long friendId) {
+
+        Set<Long> userFriends = friends.get(userId);
+        Set<Long> friendFriends = friends.get(friendId);
+        if (userFriends != null) userFriends.remove(friendId);
+        if (friendFriends != null) friendFriends.remove(userId);
+    }
+
+    @Override
+    public Set<Long> getFriendIds(Long userId) {
+        return friends.getOrDefault(userId, Collections.emptySet());
+    }
+
+    public Map<Long, Set<Long>> getFriends() {
+        return friends;
     }
 }

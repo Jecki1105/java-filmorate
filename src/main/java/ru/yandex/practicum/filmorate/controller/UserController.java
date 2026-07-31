@@ -2,9 +2,6 @@ package ru.yandex.practicum.filmorate.controller;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -12,26 +9,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.user.UserService;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+
 
 @Slf4j
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
-    private final UserStorage userStorage;
     private final UserService userService;
 
     @Autowired
-    public UserController(UserStorage userStorage, UserService userService) {
-        this.userStorage = userStorage;
+    public UserController(UserService userService) {
         this.userService = userService;
     }
 
     @GetMapping
     public Collection<User> findAll() {
         log.info("Запрос на получение всех пользователей.");
-        Collection<User> users = userStorage.findAll();
+        Collection<User> users = userService.findAll();
         log.debug("Получен список пользователей: {}", users);
         return users;
     }
@@ -47,21 +42,15 @@ public class UserController {
     @PutMapping
     public User update(@Valid @RequestBody User newUser) {
         log.info("Запрос на изменение пользователя {}", newUser);
-        User oldUser = userStorage.update(newUser);
+        User oldUser = userService.update(newUser);
         log.info("Пользователь: {} обновлен", oldUser);
         return oldUser;
-    }
-
-    private Long getNextId() {
-        Long newId = userStorage.getNextId();
-        log.debug("Сгенерирован новый id - {}", newId);
-        return newId;
     }
 
     @GetMapping("/{id}")
     public User getUserById(@PathVariable Long id) {
         log.info("Запрос на получение пользователя с ID: {}", id);
-        User user = userStorage.findById(id);
+        User user = userService.findById(id);
         log.debug("Найден пользователь: {}", user);
         return user;
     }
@@ -91,12 +80,7 @@ public class UserController {
     @GetMapping("/{id}/friends")
     public List<User> getFriends(@PathVariable Long id) {
         log.info("Запрос на получение списка друзей пользователя с ID: {}", id);
-        userStorage.findById(id);
-        Set<Long> friendIds = userService.getFriendIds(id);
-        return friendIds.stream()
-                .map(userStorage::findById)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        return userService.getFriends(id);
     }
 
 }

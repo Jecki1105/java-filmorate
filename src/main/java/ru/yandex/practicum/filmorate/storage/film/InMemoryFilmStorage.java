@@ -7,14 +7,13 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Component
 public class InMemoryFilmStorage implements FilmStorage {
 
+    private final Map<Long, Set<Long>> filmLikes = new HashMap<>();
     public static final int MAX_LENGTH_DESCRIPTION = 200;
     private static final LocalDate RELEASE_DATA = LocalDate.of(1895, 12, 28);
     private final Map<Long, Film> films = new HashMap<>();
@@ -94,19 +93,30 @@ public class InMemoryFilmStorage implements FilmStorage {
         return films;
     }
 
+
+    @Override
+    public void addLike(Long filmId, Long userId) {
+        findById(filmId);
+        filmLikes.putIfAbsent(filmId, new HashSet<>());
+        filmLikes.get(filmId).add(userId);
+    }
+
     @Override
     public void deleteLike(Long filmId, Long userId) {
-        Film film = findById(filmId);
-        if (film.getWhoLikes() == null) {
-            log.warn("У фильма {} нет данных о лайках", filmId);
-            return;
+        findById(filmId);
+        Set<Long> likes = filmLikes.get(filmId);
+        if (likes != null) {
+            likes.remove(userId);
         }
+    }
 
-        if (!film.getWhoLikes().contains(userId)) {
-            log.warn("Пользователь {} не ставил лайк фильму {}", userId, filmId);
-            return;
-        }
+    @Override
+    public int getLikesCount(Long filmId) {
+        Set<Long> likes = filmLikes.get(filmId);
+        return likes == null ? 0 : likes.size();
+    }
 
-        film.getWhoLikes().remove(userId);
+    public Map<Long, Set<Long>> getFilmLikes() {
+        return filmLikes;
     }
 }
