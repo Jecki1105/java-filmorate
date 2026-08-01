@@ -20,6 +20,7 @@ public class InMemoryFilmService implements FilmService {
     private final UserStorage userStorage;
 
     private static final LocalDate DATE_FIRST_MOVIE = LocalDate.of(1895, 12, 28);
+    public static final int MAX_LENGTH_DESCRIPTION = 200;
 
     @Autowired
     public InMemoryFilmService(FilmStorage filmStorage, UserStorage userStorage) {
@@ -66,6 +67,15 @@ public class InMemoryFilmService implements FilmService {
 
     @Override
     public Film update(Film newFilm) {
+        if (newFilm.getDescription() != null && newFilm.getDescription().length() > MAX_LENGTH_DESCRIPTION) {
+            throw new ValidationException("Максимальная длина описания — 200 символов!");
+        }
+        if (newFilm.getReleaseDate() != null && newFilm.getReleaseDate().isBefore(DATE_FIRST_MOVIE)) {
+            throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года!");
+        }
+        if (newFilm.getDuration() != null && newFilm.getDuration() <= 0) {
+            throw new ValidationException("Продолжительность фильма должна быть положительным числом!");
+        }
         return filmStorage.update(newFilm);
     }
 

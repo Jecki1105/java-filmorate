@@ -7,6 +7,7 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.Objects;
@@ -67,6 +68,15 @@ public class InMemoryUserService implements UserService {
 
     @Override
     public User update(User newUser) {
+        if (newUser.getLogin() != null && newUser.getLogin().contains(" ")) {
+            throw new ValidationException("Логин не может содержать пробелы");
+        }
+        if (newUser.getEmail() != null && !newUser.getEmail().contains("@")) {
+            throw new ValidationException("Электронная почта должна содержать символ: @");
+        }
+        if (newUser.getBirthday() != null && newUser.getBirthday().isAfter(LocalDate.now())) {
+            throw new ValidationException("Дата рождения не может быть в будущем!");
+        }
         return userStorage.update(newUser);
     }
 
