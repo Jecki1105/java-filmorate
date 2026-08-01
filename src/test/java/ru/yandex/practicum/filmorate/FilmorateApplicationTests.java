@@ -1,32 +1,45 @@
 package ru.yandex.practicum.filmorate;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
-import org.springframework.boot.test.context.SpringBootTest;
-import ru.yandex.practicum.filmorate.controller.FilmController;
-import ru.yandex.practicum.filmorate.controller.UserController;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
-
-
-import static org.junit.jupiter.api.Assertions.*;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
-import java.util.Collection;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
+@AutoConfigureMockMvc
 class FilmorateApplicationTests {
 
-    private UserController userController;
-    private FilmController filmController;
-    public static final int FAKE_ID_FOR_TEST = 121;
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private InMemoryFilmStorage filmStorage;
+
+    @Autowired
+    private InMemoryUserStorage userStorage;
 
     @BeforeEach
-    void create() {
-        userController = new UserController();
-        filmController = new FilmController();
+    void setUp() {
+        filmStorage.getFilms().clear();
+        filmStorage.getFilmLikes().clear();
+        userStorage.getUsers().clear();
+        userStorage.getFriends().clear();
     }
 
     Film createValidFilm() {
@@ -40,7 +53,7 @@ class FilmorateApplicationTests {
 
     User createValidUser() {
         return User.builder()
-                .email("email@.com")
+                .email("user@example.com")
                 .login("Логин")
                 .name("Имя")
                 .birthday(LocalDate.of(2008, 4, 12))
@@ -52,184 +65,233 @@ class FilmorateApplicationTests {
     }
 
     @Test
-    void shouldCreateValidFilmSuccessfully() {
+    void shouldCreateValidFilmSuccessfully() throws Exception {
         Film film = createValidFilm();
-        Film createdFilm = filmController.create(film);
 
-        assertEquals(1, createdFilm.getId());
-        assertEquals("Имя1", createdFilm.getName());
-        assertEquals("Описание", createdFilm.getDescription());
-        assertEquals(LocalDate.of(2010, 5, 10), createdFilm.getReleaseDate());
-        assertEquals(160, createdFilm.getDuration());
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").isNumber())
+                .andExpect(jsonPath("$.name").value("Имя1"))
+                .andExpect(jsonPath("$.description").value("Описание"))
+                .andExpect(jsonPath("$.releaseDate").value("2010-05-10"))
+                .andExpect(jsonPath("$.duration").value(160));
     }
 
     @Test
-    void shouldFailOnTooEarlyReleaseDate() {
+    void shouldFailOnTooEarlyReleaseDate() throws Exception {
         Film film = createValidFilm();
         film.setReleaseDate(LocalDate.of(1895, 12, 27));
 
-        ValidationException exception = assertThrows(ValidationException.class, () -> filmController.create(film));
-        assertEquals("Дата релиза должна быть указана и не может быть раньше 28 декабря 1895 года!",
-                exception.getMessage());
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(
+                        "Дата релиза не может быть раньше 28 декабря 1895 года"));
     }
 
     @Test
-    void shouldFailOnEmptyFilmName() {
+    void shouldFailOnEmptyFilmName() throws Exception {
         Film film = createValidFilm();
         film.setName("");
 
-        ValidationException exception = assertThrows(ValidationException.class, () -> filmController.create(film));
-        assertEquals("Название не может быть пустым!", exception.getMessage());
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(
+                        "Название не может быть пустым!"));
     }
 
     @Test
-    void shouldFailOnLongDescription() {
+    void shouldFailOnLongDescription() throws Exception {
         Film film = createValidFilm();
         film.setDescription("a".repeat(201));
 
-        ValidationException exception = assertThrows(ValidationException.class, () -> filmController.create(film));
-        assertEquals("Максимальная длина описания — 200 символов!", exception.getMessage());
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(
+                        "Максимальная длина описания — 200 символов!"));
     }
 
     @Test
-    void shouldFailOnMissingReleaseDate() {
+    void shouldFailOnMissingReleaseDate() throws Exception {
         Film film = createValidFilm();
         film.setReleaseDate(null);
 
-        ValidationException exception = assertThrows(ValidationException.class, () -> filmController.create(film));
-        assertEquals("Дата релиза должна быть указана и не может быть раньше 28 декабря 1895 года!",
-                exception.getMessage());
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(
+                        "Дата релиза должна быть указана и не может быть раньше 28 декабря 1895 года!"));
     }
 
     @Test
-    void shouldFailOnZeroDuration() {
+    void shouldFailOnZeroDuration() throws Exception {
         Film film = createValidFilm();
         film.setDuration(0);
 
-        ValidationException exception = assertThrows(ValidationException.class, () -> filmController.create(film));
-        assertEquals("Продолжительность фильма должна быть положительным числом!",
-                exception.getMessage());
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(
+                        "Продолжительность фильма должна быть положительным числом!"));
     }
 
     @Test
-    void shouldFailOnNegativeDuration() {
+    void shouldFailOnNegativeDuration() throws Exception {
         Film film = createValidFilm();
         film.setDuration(-50);
 
-        ValidationException exception = assertThrows(ValidationException.class, () -> filmController.create(film));
-        assertEquals("Продолжительность фильма должна быть положительным числом!",
-                exception.getMessage());
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(
+                        "Продолжительность фильма должна быть положительным числом!"));
     }
 
     @Test
-    void shouldThrowNotFoundOnUpdateWithFakeFilmId() {
+    void shouldThrowNotFoundOnUpdateWithFakeFilmId() throws Exception {
         Film oldFilm = createValidFilm();
-        filmController.create(oldFilm);
+
+        mockMvc.perform(post("/films")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(oldFilm)));
 
         Film newFilm = Film.builder()
-                .id(FAKE_ID_FOR_TEST)
+                .id(121L)
                 .name("Обновленное имя")
                 .description("Описание")
                 .releaseDate(LocalDate.of(2010, 5, 10))
                 .duration(160)
                 .build();
 
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> filmController.update(newFilm));
-        assertEquals("Фильм с id " + FAKE_ID_FOR_TEST + " не найден!",
-                exception.getMessage());
-
-        Collection<Film> films = filmController.findAll();
-        assertEquals(1, films.size());
-        assertTrue(films.contains(oldFilm));
+        mockMvc.perform(put("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newFilm)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value(
+                        "Фильм с id 121 не найден!"));
     }
 
     @Test
-    void shouldCreateValidUserSuccessfully() {
+    void shouldCreateValidUserSuccessfully() throws Exception {
         User user = createValidUser();
-        User createdUser = userController.create(user);
 
-        assertEquals(1, createdUser.getId());
-        assertEquals("email@.com", createdUser.getEmail());
-        assertEquals("Логин", createdUser.getLogin());
-        assertEquals("Имя", createdUser.getName());
-        assertEquals(LocalDate.of(2008, 4, 12), createdUser.getBirthday());
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").isNumber())
+                .andExpect(jsonPath("$.email").value("user@example.com"))
+                .andExpect(jsonPath("$.login").value("Логин"))
+                .andExpect(jsonPath("$.name").value("Имя"))
+                .andExpect(jsonPath("$.birthday").value("2008-04-12"));
     }
 
     @Test
-    void shouldThrowNotFoundOnUpdateWithFakeUserId() {
+    void shouldThrowNotFoundOnUpdateWithFakeUserId() throws Exception {
         User oldUser = createValidUser();
-        userController.create(oldUser);
+
+        mockMvc.perform(post("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(oldUser)));
 
         User newUser = User.builder()
-                .id(FAKE_ID_FOR_TEST)
-                .email("email@.com")
+                .id(121L)
+                .email("user@example.com")
                 .login("Логин")
                 .name("Имя")
                 .birthday(LocalDate.of(2002, 8, 28))
                 .build();
 
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> userController.update(newUser));
-        assertEquals("Пользователь с id " + FAKE_ID_FOR_TEST + " не найден",
-                exception.getMessage());
-
-        Collection<User> users = userController.findAll();
-        assertEquals(1, users.size());
-        assertTrue(users.contains(oldUser));
+        mockMvc.perform(put("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newUser)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value(
+                        "Пользователь с id 121 не найден"));
     }
 
     @Test
-    void shouldGetAllUsersSuccessfully() {
+    void shouldGetAllUsersSuccessfully() throws Exception {
+        User user1 = createValidUser();
+        User user2 = User.builder()
+                .email("secondEmail@com")
+                .login("Логин2")
+                .name("Имя2")
+                .birthday(LocalDate.of(2000, 1, 1))
+                .build();
 
-        User user1 = userController.create(createValidUser());
-        User user2 = userController.create(
-                User.builder()
-                        .email("secondEmail@.com")
-                        .login("Логин2")
-                        .name("Имя2")
-                        .birthday(LocalDate.of(2000, 1, 1))
-                        .build()
-        );
-        Collection<User> allUsers = userController.findAll();
-        assertEquals(2, allUsers.size());
-        assertTrue(allUsers.contains(user1));
-        assertTrue(allUsers.contains(user2));
+        mockMvc.perform(post("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(user1)));
+        mockMvc.perform(post("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(user2)));
 
+        mockMvc.perform(get("/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2));
     }
 
     @Test
-    void shouldFailOnInvalidEmail() {
+    void shouldFailOnInvalidEmail() throws Exception {
         User user = createValidUser();
         user.setEmail("email.com");
 
-        ValidationException exception = assertThrows(ValidationException.class, () -> userController.create(user));
-        assertEquals("Электронная почта не может быть пустой и должна содержать символ: @", exception.getMessage());
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(
+                        "Электронная почта не может быть пустой и должна содержать символ: @"));
     }
 
     @Test
-    void shouldFailOnNullEmail() {
+    void shouldFailOnNullEmail() throws Exception {
         User user = createValidUser();
         user.setEmail(null);
 
-        ValidationException exception = assertThrows(ValidationException.class, () -> userController.create(user));
-        assertEquals("Электронная почта не может быть пустой и должна содержать символ: @", exception.getMessage());
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(
+                        "Электронная почта не может быть пустой и должна содержать символ: @"));
     }
 
     @Test
-    void shouldFailOnFutureBirthday() {
+    void shouldFailOnFutureBirthday() throws Exception {
         User user = createValidUser();
         user.setBirthday(LocalDate.now().plusDays(1));
 
-        ValidationException exception = assertThrows(ValidationException.class, () -> userController.create(user));
-        assertEquals("Дата рождения должна быть указана и не может быть в будущем!", exception.getMessage());
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(
+                        "Дата рождения должна быть указана и не может быть в будущем!"));
     }
 
     @Test
-    void shouldFailOnNullBirthday() {
+    void shouldFailOnNullBirthday() throws Exception {
         User user = createValidUser();
         user.setBirthday(null);
 
-        ValidationException exception = assertThrows(ValidationException.class, () -> userController.create(user));
-        assertEquals("Дата рождения должна быть указана и не может быть в будущем!", exception.getMessage());
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(user)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(
+                        "Дата рождения должна быть указана и не может быть в будущем!"));
     }
-
 }
