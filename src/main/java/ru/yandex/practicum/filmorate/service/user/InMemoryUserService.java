@@ -24,12 +24,23 @@ public class InMemoryUserService implements UserService {
     }
 
     @Override
-    public void addFriend(Long userId, Long friendId) {
-        if (userId == friendId) {
+    public void addFriendRequest(Long userId, Long friendId) {
+        if (userId.equals(friendId)) {
             throw new ValidationException("Нельзя добавить себя в друзья");
         }
-        userStorage.addFriend(userId, friendId);
-        log.info("Пользователь {} добавлен в друзья пользователя {}", friendId, userId);
+        userStorage.addFriendRequest(userId, friendId);
+        log.info("Пользователь {} отправил запрос в друзья пользователю {}", userId, friendId);
+    }
+
+    @Override
+    public void confirmFriend(Long userId, Long friendId) {
+        userStorage.confirmFriend(userId, friendId);
+        log.info("Пользователь {} подтвердил дружбу с пользователем {}", userId, friendId);
+    }
+
+    @Override
+    public Set<Long> getPendingFriendIds(Long userId) {
+        return userStorage.getPendingFriendIds(userId);
     }
 
     @Override
