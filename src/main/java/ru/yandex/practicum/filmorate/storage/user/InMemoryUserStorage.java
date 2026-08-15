@@ -96,8 +96,8 @@ public class InMemoryUserStorage implements UserStorage {
         findById(friendId);
         friends.putIfAbsent(userId, new HashMap<>());
         friends.putIfAbsent(friendId, new HashMap<>());
-        friends.get(userId).put(friendId, FriendshipStatus.PENDING);
-        friends.get(friendId).put(userId, FriendshipStatus.PENDING);
+        friends.get(userId).put(friendId, FriendshipStatus.CONFIRMED);
+        friends.get(friendId).put(userId, FriendshipStatus.CONFIRMED);
     }
 
     @Override
