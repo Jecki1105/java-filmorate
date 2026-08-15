@@ -9,16 +9,25 @@ import java.util.Set;
 public interface UserStorage {
 
     Collection<User> findAll();
+
     User create(User user);
+
     User update(User newUser);
+
     Long getNextId();
+
     User findById(Long id);
 
 
-    void addFriendRequest(Long userId, Long friendId);   // создать запрос (PENDING)
-    void confirmFriend(Long userId, Long friendId);      // подтвердить (CONFIRMED)
+    void addFriendRequest(Long userId, Long friendId);
+
+    void confirmFriend(Long userId, Long friendId);
+
     void deleteFriend(Long userId, Long friendId);
-    Set<Long> getFriendIds(Long userId);                // получить подтверждённых друзей
-    Set<Long> getPendingFriendIds(Long userId);          // получить входящие заявки
+
+    Set<Long> getFriendIds(Long userId);
+
+    Set<Long> getPendingFriendIds(Long userId);
+
     FriendshipStatus getFriendshipStatus(Long userId, Long friendId);
 }

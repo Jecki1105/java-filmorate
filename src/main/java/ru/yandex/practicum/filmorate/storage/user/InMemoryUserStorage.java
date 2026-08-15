@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.FriendshipStatus;
 import ru.yandex.practicum.filmorate.model.User;
+
 import java.util.stream.Collectors;
 import java.util.Collections;
 import java.util.*;
@@ -120,6 +121,7 @@ public class InMemoryUserStorage implements UserStorage {
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
     }
+
     @Override
     public Set<Long> getPendingFriendIds(Long userId) {
         Map<Long, FriendshipStatus> userFriends = friends.get(userId);
@@ -129,12 +131,14 @@ public class InMemoryUserStorage implements UserStorage {
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
     }
+
     @Override
     public FriendshipStatus getFriendshipStatus(Long userId, Long friendId) {
         Map<Long, FriendshipStatus> userFriends = friends.get(userId);
         if (userFriends == null) return null;
         return userFriends.get(friendId);
     }
+
     public Map<Long, Map<Long, FriendshipStatus>> getFriends() {
         return friends;
     }
