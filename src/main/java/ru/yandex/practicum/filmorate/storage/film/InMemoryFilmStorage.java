@@ -1,14 +1,14 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.*;
 
 @Slf4j
-@Component
+@Repository
 public class InMemoryFilmStorage implements FilmStorage {
 
     private final Map<Long, Set<Long>> filmLikes = new HashMap<>();

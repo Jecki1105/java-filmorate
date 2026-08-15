@@ -23,25 +23,6 @@ public class InMemoryUserService implements UserService {
         this.userStorage = userStorage;
     }
 
-    @Override
-    public void addFriendRequest(Long userId, Long friendId) {
-        if (userId.equals(friendId)) {
-            throw new ValidationException("Нельзя добавить себя в друзья");
-        }
-        userStorage.addFriendRequest(userId, friendId);
-        log.info("Пользователь {} отправил запрос в друзья пользователю {}", userId, friendId);
-    }
-
-    @Override
-    public void confirmFriend(Long userId, Long friendId) {
-        userStorage.confirmFriend(userId, friendId);
-        log.info("Пользователь {} подтвердил дружбу с пользователем {}", userId, friendId);
-    }
-
-    @Override
-    public Set<Long> getPendingFriendIds(Long userId) {
-        return userStorage.getPendingFriendIds(userId);
-    }
 
     @Override
     public void deleteFriend(Long userId, Long friendId) {
@@ -62,6 +43,15 @@ public class InMemoryUserService implements UserService {
                 .map(userStorage::findById)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void addFriend(Long userId, Long friendId) {
+        if (userId.equals(friendId)) {
+            throw new ValidationException("Нельзя добавить себя в друзья");
+        }
+        userStorage.addFriend(userId, friendId);
+        log.info("Пользователь {} добавлен в друзья к пользователю {}", userId, friendId);
     }
 
     @Override
