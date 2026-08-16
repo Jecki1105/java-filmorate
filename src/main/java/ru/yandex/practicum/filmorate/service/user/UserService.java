@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 public interface UserService {
+
     User create(User user);
 
     User update(User newUser);
@@ -19,9 +20,13 @@ public interface UserService {
 
     void addFriend(Long userId, Long friendId);
 
+    void addFriendRequest(Long userId, Long friendId);
+
     void deleteFriend(Long userId, Long friendId);
 
     List<User> getCommonFriends(Long userId1, Long userId2);
 
     Set<Long> getFriendIds(Long userId);
+
+    Set<Long> getPendingFriendIds(Long userId);
 }

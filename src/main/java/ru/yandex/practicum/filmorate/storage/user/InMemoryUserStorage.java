@@ -1,18 +1,21 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.FriendshipStatus;
 import ru.yandex.practicum.filmorate.model.User;
 
+import java.util.Collections;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
-@Component
+@Repository
 public class InMemoryUserStorage implements UserStorage {
 
     private final Map<Long, User> users = new HashMap<>();
-    private final Map<Long, Set<Long>> friends = new HashMap<>();
+    private final Map<Long, Map<Long, FriendshipStatus>> friends = new HashMap<>();
 
     @Override
     public Collection<User> findAll() {
@@ -78,30 +81,63 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public void addFriend(Long userId, Long friendId) {
-        findById(userId);
-        findById(friendId);
-        friends.putIfAbsent(userId, new HashSet<>());
-        friends.putIfAbsent(friendId, new HashSet<>());
-        friends.get(userId).add(friendId);
-        friends.get(friendId).add(userId);
+    public void deleteFriend(Long userId, Long friendId) {
+        if (friends.containsKey(userId)) {
+            friends.get(userId).remove(friendId);
+        }
+        if (friends.containsKey(friendId)) {
+            friends.get(friendId).remove(userId);
+        }
     }
 
     @Override
-    public void deleteFriend(Long userId, Long friendId) {
+    public void addFriend(Long userId, Long friendId) {
+        findById(userId);
+        findById(friendId);
+        friends.putIfAbsent(userId, new HashMap<>());
+        friends.putIfAbsent(friendId, new HashMap<>());
+        friends.get(userId).put(friendId, FriendshipStatus.CONFIRMED);
+        friends.get(friendId).put(userId, FriendshipStatus.CONFIRMED);
+    }
 
-        Set<Long> userFriends = friends.get(userId);
-        Set<Long> friendFriends = friends.get(friendId);
-        if (userFriends != null) userFriends.remove(friendId);
-        if (friendFriends != null) friendFriends.remove(userId);
+    @Override
+    public void addFriendRequest(Long userId, Long friendId) {
+        findById(userId);
+        findById(friendId);
+        friends.putIfAbsent(userId, new HashMap<>());
+        friends.putIfAbsent(friendId, new HashMap<>());
+        friends.get(userId).put(friendId, FriendshipStatus.PENDING);
+        friends.get(friendId).put(userId, FriendshipStatus.PENDING);
     }
 
     @Override
     public Set<Long> getFriendIds(Long userId) {
-        return friends.getOrDefault(userId, Collections.emptySet());
+        Map<Long, FriendshipStatus> userFriends = friends.get(userId);
+        if (userFriends == null) return Collections.emptySet();
+        return userFriends.entrySet().stream()
+                .filter(entry -> entry.getValue() == FriendshipStatus.CONFIRMED)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
     }
 
-    public Map<Long, Set<Long>> getFriends() {
+    @Override
+    public Set<Long> getPendingFriendIds(Long userId) {
+        Map<Long, FriendshipStatus> userFriends = friends.get(userId);
+        if (userFriends == null) return Collections.emptySet();
+        return userFriends.entrySet().stream()
+                .filter(entry -> entry.getValue() == FriendshipStatus.PENDING)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public FriendshipStatus getFriendshipStatus(Long userId, Long friendId) {
+        Map<Long, FriendshipStatus> userFriends = friends.get(userId);
+        if (userFriends == null) return null;
+        return userFriends.get(friendId);
+    }
+
+    public Map<Long, Map<Long, FriendshipStatus>> getFriends() {
         return friends;
     }
 }

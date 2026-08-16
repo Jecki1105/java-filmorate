@@ -4,7 +4,8 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
-
+import java.util.Set;
+import java.util.HashSet;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -29,4 +30,7 @@ public class Film {
     @Positive(message = "Продолжительность фильма должна быть положительным числом!")
     private Integer duration;
 
+    @Builder.Default
+    private Set<Genre> genres = new HashSet<>();
+    private RatingMpa mpaRating;
 }
