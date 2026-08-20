@@ -7,8 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.RatingMpa;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
@@ -34,8 +36,17 @@ class FilmorateApplicationTests {
     @Autowired
     private InMemoryUserStorage userStorage;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @BeforeEach
     void setUp() {
+        jdbcTemplate.update("DELETE FROM film_likes");
+        jdbcTemplate.update("DELETE FROM film_genre");
+        jdbcTemplate.update("DELETE FROM friendship");
+        jdbcTemplate.update("DELETE FROM films");
+        jdbcTemplate.update("DELETE FROM users");
+
         filmStorage.getFilms().clear();
         filmStorage.getFilmLikes().clear();
         userStorage.getUsers().clear();
@@ -48,6 +59,7 @@ class FilmorateApplicationTests {
                 .description("Описание")
                 .releaseDate(LocalDate.of(2010, 5, 10))
                 .duration(160)
+                .mpaRating(new RatingMpa(1L, "G"))
                 .build();
     }
 
@@ -171,6 +183,7 @@ class FilmorateApplicationTests {
                 .description("Описание")
                 .releaseDate(LocalDate.of(2010, 5, 10))
                 .duration(160)
+                .mpaRating(new RatingMpa(1L, "G"))
                 .build();
 
         mockMvc.perform(put("/films")
