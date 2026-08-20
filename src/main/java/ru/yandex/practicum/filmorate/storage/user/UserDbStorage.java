@@ -32,6 +32,7 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User create(User user) {
+
         String sql = "INSERT INTO users(email, login, name, birthday) VALUES (?, ?, ?, ?)";
         jdbc.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, new String[]{"user_id"});
