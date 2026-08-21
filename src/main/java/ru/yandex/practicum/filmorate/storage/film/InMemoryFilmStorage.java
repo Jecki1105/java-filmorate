@@ -6,6 +6,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
@@ -48,8 +49,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         return oldFilm;
     }
 
-    @Override
-    public Long getNextId() {
+    private Long getNextId() {
         long currentMaxId = films.keySet()
                 .stream()
                 .mapToLong(id -> id)
@@ -93,6 +93,16 @@ public class InMemoryFilmStorage implements FilmStorage {
     public int getLikesCount(Long filmId) {
         Set<Long> likes = filmLikes.get(filmId);
         return likes == null ? 0 : likes.size();
+    }
+
+    @Override
+    public List<Film> getPopularFilms(int count) {
+        return films.values().stream()
+                .sorted((f1, f2) -> Integer.compare(
+                        getLikesCount(f2.getId()),
+                        getLikesCount(f1.getId())))
+                .limit(count)
+                .collect(Collectors.toList());
     }
 
     public Map<Long, Set<Long>> getFilmLikes() {

@@ -10,7 +10,6 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -54,15 +53,7 @@ public class InMemoryFilmService implements FilmService {
 
     @Override
     public List<Film> getPopularFilms(int count) {
-        List<Film> allFilms = new ArrayList<>(filmStorage.findAll());
-        allFilms.sort((film1, film2) -> {
-            int likes1 = filmStorage.getLikesCount(film1.getId());
-            int likes2 = filmStorage.getLikesCount(film2.getId());
-            return Integer.compare(likes2, likes1);
-        });
-        return allFilms.stream()
-                .limit(count)
-                .collect(Collectors.toList());
+        return filmStorage.getPopularFilms(count);
     }
 
     @Override

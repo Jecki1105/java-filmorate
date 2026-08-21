@@ -1,9 +1,9 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
-import ru.yandex.practicum.filmorate.model.FriendshipStatus;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 public interface UserStorage {
@@ -14,19 +14,14 @@ public interface UserStorage {
 
     User update(User newUser);
 
-    Long getNextId();
-
     User findById(Long id);
 
     void addFriend(Long userId, Long friendId);
-
-    void addFriendRequest(Long userId, Long friendId);
 
     void deleteFriend(Long userId, Long friendId);
 
     Set<Long> getFriendIds(Long userId);
 
-    Set<Long> getPendingFriendIds(Long userId);
+    List<User> getCommonFriends(Long userId1, Long userId2);
 
-    FriendshipStatus getFriendshipStatus(Long userId, Long friendId);
 }

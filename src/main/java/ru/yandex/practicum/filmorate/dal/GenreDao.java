@@ -1,6 +1,8 @@
 package ru.yandex.practicum.filmorate.dal;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -11,20 +13,24 @@ import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
+@Slf4j
 public class GenreDao {
+
+    private static final String FIND_ALL_QUERY = "SELECT * FROM genre ORDER BY genre_id";
+    private static final String FIND_BY_ID_QUERY = "SELECT * FROM genre WHERE genre_id = ?";
+
     private final JdbcTemplate jdbc;
     private final RowMapper<Genre> genreRowMapper;
 
     public List<Genre> findAll() {
-        String sql = "SELECT * FROM genre ORDER BY genre_id";
-        return jdbc.query(sql, genreRowMapper);
+        return jdbc.query(FIND_ALL_QUERY, genreRowMapper);
     }
 
     public Optional<Genre> findById(long id) {
-        String sql = "SELECT * FROM genre WHERE genre_id = ?";
         try {
-            return Optional.ofNullable(jdbc.queryForObject(sql, genreRowMapper, id));
-        } catch (Exception e) {
+            return Optional.ofNullable(jdbc.queryForObject(FIND_BY_ID_QUERY, genreRowMapper, id));
+        } catch (EmptyResultDataAccessException e) {
+            log.warn("Жанр с id {} не найден", id);
             return Optional.empty();
         }
     }
