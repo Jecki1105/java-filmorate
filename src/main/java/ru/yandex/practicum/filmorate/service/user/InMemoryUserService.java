@@ -36,13 +36,7 @@ public class InMemoryUserService implements UserService {
     public List<User> getCommonFriends(Long userId1, Long userId2) {
         userStorage.findById(userId1);
         userStorage.findById(userId2);
-        Set<Long> user1Friends = userStorage.getFriendIds(userId1);
-        Set<Long> user2Friends = userStorage.getFriendIds(userId2);
-        return user1Friends.stream()
-                .filter(user2Friends::contains)
-                .map(userStorage::findById)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        return userStorage.getCommonFriends(userId1, userId2);
     }
 
     @Override
@@ -52,20 +46,6 @@ public class InMemoryUserService implements UserService {
         }
         userStorage.addFriend(userId, friendId);
         log.info("Пользователь {} добавлен в друзья к пользователю {}", userId, friendId);
-    }
-
-    @Override
-    public void addFriendRequest(Long userId, Long friendId) {
-        if (userId.equals(friendId)) {
-            throw new ValidationException("Нельзя добавить себя в друзья");
-        }
-        userStorage.addFriendRequest(userId, friendId);
-        log.info("Пользователь {} отправил запрос в друзья пользователю {}", userId, friendId);
-    }
-
-    @Override
-    public Set<Long> getPendingFriendIds(Long userId) {
-        return userStorage.getPendingFriendIds(userId);
     }
 
     @Override

@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.storage.user;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.FriendshipStatus;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.Collections;
@@ -15,7 +14,7 @@ import java.util.stream.Collectors;
 public class InMemoryUserStorage implements UserStorage {
 
     private final Map<Long, User> users = new HashMap<>();
-    private final Map<Long, Map<Long, FriendshipStatus>> friends = new HashMap<>();
+    private final Map<Long, Set<Long>> friends = new HashMap<>();
 
     @Override
     public Collection<User> findAll() {
@@ -55,8 +54,7 @@ public class InMemoryUserStorage implements UserStorage {
         return oldUser;
     }
 
-    @Override
-    public Long getNextId() {
+    private Long getNextId() {
         long currentMaxId = users.keySet()
                 .stream()
                 .mapToLong(id -> id)
@@ -82,11 +80,9 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public void deleteFriend(Long userId, Long friendId) {
-        if (friends.containsKey(userId)) {
-            friends.get(userId).remove(friendId);
-        }
-        if (friends.containsKey(friendId)) {
-            friends.get(friendId).remove(userId);
+        Set<Long> userFriends = friends.get(userId);
+        if (userFriends != null) {
+            userFriends.remove(friendId);
         }
     }
 
@@ -94,50 +90,25 @@ public class InMemoryUserStorage implements UserStorage {
     public void addFriend(Long userId, Long friendId) {
         findById(userId);
         findById(friendId);
-        friends.putIfAbsent(userId, new HashMap<>());
-        friends.putIfAbsent(friendId, new HashMap<>());
-        friends.get(userId).put(friendId, FriendshipStatus.CONFIRMED);
-        friends.get(friendId).put(userId, FriendshipStatus.CONFIRMED);
+        friends.computeIfAbsent(userId, k -> new HashSet<>()).add(friendId);
     }
 
     @Override
-    public void addFriendRequest(Long userId, Long friendId) {
-        findById(userId);
-        findById(friendId);
-        friends.putIfAbsent(userId, new HashMap<>());
-        friends.putIfAbsent(friendId, new HashMap<>());
-        friends.get(userId).put(friendId, FriendshipStatus.PENDING);
-        friends.get(friendId).put(userId, FriendshipStatus.PENDING);
+    public List<User> getCommonFriends(Long userId1, Long userId2) {
+        Set<Long> friends1 = getFriendIds(userId1);
+        Set<Long> friends2 = getFriendIds(userId2);
+        return friends1.stream()
+                .filter(friends2::contains)
+                .map(this::findById)
+                .collect(Collectors.toList());
     }
 
     @Override
     public Set<Long> getFriendIds(Long userId) {
-        Map<Long, FriendshipStatus> userFriends = friends.get(userId);
-        if (userFriends == null) return Collections.emptySet();
-        return userFriends.entrySet().stream()
-                .filter(entry -> entry.getValue() == FriendshipStatus.CONFIRMED)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
+        return friends.getOrDefault(userId, Collections.emptySet());
     }
 
-    @Override
-    public Set<Long> getPendingFriendIds(Long userId) {
-        Map<Long, FriendshipStatus> userFriends = friends.get(userId);
-        if (userFriends == null) return Collections.emptySet();
-        return userFriends.entrySet().stream()
-                .filter(entry -> entry.getValue() == FriendshipStatus.PENDING)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
-    }
-
-    @Override
-    public FriendshipStatus getFriendshipStatus(Long userId, Long friendId) {
-        Map<Long, FriendshipStatus> userFriends = friends.get(userId);
-        if (userFriends == null) return null;
-        return userFriends.get(friendId);
-    }
-
-    public Map<Long, Map<Long, FriendshipStatus>> getFriends() {
+    public Map<Long, Set<Long>> getFriends() {
         return friends;
     }
 }
